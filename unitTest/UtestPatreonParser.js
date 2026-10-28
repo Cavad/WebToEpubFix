@@ -2,6 +2,25 @@
 
 module("UtestPatreonParser");
 
+QUnit.test("fetchChapter_withoutTaggedTitle", async function (assert) {
+    let originalFetch = HttpClient.wrapFetch;
+    try {
+        let dom = TestUtils.makeDomWithBody("<h1>Chapter title</h1><div class='patreon-post-content'><p>Chapter body</p></div>");
+        HttpClient.wrapFetch = async () => ({responseXML: dom});
+        let chapter = await new PatreonParser().fetchChapter("https://www.patreon.com/posts/123");
+        assert.equal(chapter.querySelector("h1").textContent, "Chapter title");
+        assert.equal(chapter.querySelector("p").textContent, "Chapter body");
+
+        dom.querySelector("h1").remove();
+        dom.title = "Page title";
+        chapter = await new PatreonParser().fetchChapter("https://www.patreon.com/posts/123");
+        assert.equal(chapter.querySelector("h1").textContent, "Page title");
+        assert.equal(chapter.querySelector("p").textContent, "Chapter body");
+    } finally {
+        HttpClient.wrapFetch = originalFetch;
+    }
+});
+
 function makePatreonFlightDom(chunks) {
     let scripts = chunks.map(c => "<script>self.__next_f.push(" + JSON.stringify([1, c]) + ")</script>").join("");
     return TestUtils.makeDomWithBody(scripts);
