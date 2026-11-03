@@ -1,7 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "WebToEpub",
-  "version": "1.0.14.61",
+  "name": "WebToEpubFix",
+  "version": "1.0.14.62",
+  "description": "Independent WebToEpub fork with Patreon and Royal Road parser fixes.",
   "default_locale": "en",
   "icons": {
     "128": "book128.png"
@@ -27,7 +28,7 @@
   "incognito": "split",
   "browser_specific_settings": {
     "gecko": {
-      "id": "WebToEpub@Baka-tsuki.org",
+      "id": "WebToEpubFix@Cavad.github.io",
       "data_collection_permissions": {
         "required": [
           "none"
@@ -37,7 +38,7 @@
       "strict_min_version": "140.0"
     },
     "gecko_android": {
-      "id": "WebToEpub@Baka-tsuki.org",
+      "id": "WebToEpubFix@Cavad.github.io",
       "strict_min_version": "142.0"
     }
   },

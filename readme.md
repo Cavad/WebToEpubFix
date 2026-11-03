@@ -1,3 +1,54 @@
+# WebToEpubFix
+
+An independent, temporary maintenance fork of [WebToEpub](https://github.com/dteviot/WebToEpub) by David Teviotdale and its contributors. This fork provides targeted Patreon and Royal Road parser fixes while [upstream pull request #3113](https://github.com/dteviot/WebToEpub/pull/3113) is reviewed. It is not an official upstream release. Once the fixes are available upstream, users are encouraged to return to the original extension.
+
+## Fixes in this fork
+
+- **Patreon:** retain fetched chapter content when the expected post-title heading is missing, using a fallback title instead of failing with a `textContent` error.
+- **Royal Road:** load the fiction's table of contents when the extension is opened on an individual chapter page, and resolve relative chapter links correctly.
+
+These changes address the reported parser failures. They do not bypass subscriptions, paywalls, authentication, or site access restrictions.
+
+## Download and installation
+
+Download packages from [Releases](https://github.com/Cavad/WebToEpubFix/releases). Firefox and Chromium require different packages:
+
+| Browser | Package | Installation |
+| --- | --- | --- |
+| Firefox desktop | `WebToEpubFix-<version>-Firefox.zip` | Extract, open `about:debugging#/runtime/this-firefox`, choose **Load Temporary Add-on**, and select `manifest.json`. |
+| Google Chrome | `WebToEpubFix-<version>-Chromium.zip` | Extract, open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked**, and select the extracted folder. |
+| Microsoft Edge | Chromium package | Extract, open `edge://extensions`, enable **Developer mode**, then **Load unpacked**. |
+| Brave | Chromium package | Extract, open `brave://extensions`, enable **Developer mode**, then **Load unpacked**. |
+| Opera | Chromium package | Extract, open `opera://extensions`, enable **Developer mode**, then **Load unpacked**. |
+
+The Firefox package is unsigned; temporary installations are removed when Firefox restarts. Permanent installation requires Mozilla signing. This fork is not currently published on Firefox Add-ons or the Chrome Web Store. Store links in the original documentation below refer to the upstream extension.
+
+Chrome, Edge, Brave, and Opera share the Chromium package. Automated parser checks have run in Chromium; live Firefox, Edge, Brave, Opera, and authenticated Patreon checks remain unverified. Safari requires separate Apple packaging and signing and is not included. Mobile browsers are not validated for this fork.
+
+The fork uses its own Firefox add-on ID and extension name. Disable the original extension while using this fork to avoid confusing the two. The extension accesses the pages you choose to convert; use content you are authorized to download.
+
+## Development and releases
+
+Use Node.js 24 and npm 11. From the repository root:
+
+```sh
+npm install
+npm run lint
+python3 scripts/package_release.py
+```
+
+Release packages, a source archive, and SHA-256 checksums are written to `release-artifacts/`. The source archive includes the dependency lockfile generated during installation. To rebuild that archive, extract it and run `npm ci`, then the build commands above.
+
+The **Build and release fork** GitHub Actions workflow builds packages when a `fixes-*` tag is pushed, or when started manually from the Actions tab. Publishing from Actions requires Actions to be enabled and its token to have permission to write repository contents. Releases are marked as prereleases while browser verification and Mozilla signing are pending.
+
+For fork-specific reports, use [this repository's issues](https://github.com/Cavad/WebToEpubFix/issues). For ongoing development and general site support, see [upstream WebToEpub](https://github.com/dteviot/WebToEpub). Original authorship and the GPL-3.0-only license are retained.
+
+---
+
+## Original WebToEpub documentation
+
+The documentation below is retained from upstream for reference. Its store links, downloads, and support links refer to the original project; use the fork installation instructions above for these fixes.
+
 <!-- Improved compatibility of back to top link: See: https://github.com/othneildrew/Best-README-Template/pull/73 -->
 
 <a id="readme-top"></a>
