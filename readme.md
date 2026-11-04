@@ -1,13 +1,18 @@
 # WebToEpubFix
 
-An independent, temporary maintenance fork of [WebToEpub](https://github.com/dteviot/WebToEpub) by David Teviotdale and its contributors. This fork provides targeted Patreon and Royal Road parser fixes while [upstream pull request #3113](https://github.com/dteviot/WebToEpub/pull/3113) is reviewed. It is not an official upstream release. Once the fixes are available upstream, users are encouraged to return to the original extension.
+An independent, temporary maintenance fork of [WebToEpub](https://github.com/dteviot/WebToEpub) by David Teviotdale and its contributors. This fork provides Pawchive improvements alongside targeted Patreon and Royal Road parser fixes proposed in [upstream pull request #3113](https://github.com/dteviot/WebToEpub/pull/3113). It is not an official upstream release. Once the fixes you need are available upstream, users are encouraged to return to the original extension.
 
 ## Fixes in this fork
 
 - **Patreon:** retain fetched chapter content when the expected post-title heading is missing, using a fallback title instead of failing with a `textContent` error.
 - **Royal Road:** load the fiction's table of contents when the extension is opened on an individual chapter page, and resolve relative chapter links correctly.
+- **Pawchive:** open the extension from a creator's post list or an individual post, load every page of matching chapters in reading order, and select the chapters to include. Creator-page search and tag filters are preserved.
 
 These changes address the reported parser failures. They do not bypass subscriptions, paywalls, authentication, or site access restrictions.
+
+### Using Pawchive
+
+Open a creator page such as [this Pawchive post list](https://pawchive.pw/patreon/user/207666427), or any post belonging to that creator, and click the extension icon. Both entry points load the creator's chapter list. To narrow the list, use the creator page's search/tag filters before opening the extension. In WebToEpubFix, tick only the chapters you want, then choose **Pack EPUB**. Posts are listed from oldest to newest; opening an individual post still offers the creator's chapter list for selection.
 
 ## Download and installation
 

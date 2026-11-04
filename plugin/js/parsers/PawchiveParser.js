@@ -12,46 +12,53 @@ class PawchiveParser extends Parser {
     }
 
     async getChapterUrls(dom, chapterUrlsUI) {
-        let firstUrl = new URL(dom.baseURI);
+        let firstUrl = PawchiveParser.creatorUrl(dom.baseURI);
         firstUrl.searchParams.set("o", 0);
         let firstHtml = (await HttpClient.wrapFetch(firstUrl.href)).responseXML;
-
-        let baseUrl = new URL(firstHtml.baseURI);
-        baseUrl.searchParams.delete("o");
-        let nextTocIndex = 50;
-        let numChapters = this.getLastPageOffset(firstHtml);
-        let nextTocPageUrl = function(_dom, chapters, lastFetch) {
-            baseUrl.searchParams.set("o", nextTocIndex);
-            nextTocIndex = nextTocIndex + 50;
-            return (chapters.length <= numChapters && nextTocIndex <= numChapters+50 && (0 < lastFetch.length))
-                ? `${baseUrl.href}`
-                : null;
-        };
         let chapters = (await this.walkTocPages(firstHtml,
             PawchiveParser.getChapterUrlsFromTocPage,
-            nextTocPageUrl,
+            PawchiveParser.nextTocPageUrl,
             chapterUrlsUI
         )).reverse();
         return chapters;
+    }
+
+    static creatorUrl(url) {
+        let creatorUrl = new URL(url);
+        let match = creatorUrl.pathname.match(/^\/[^/]+\/user\/[^/]+/);
+        if (match === null) {
+            throw new Error("Open a Pawchive creator or post page to select chapters.");
+        }
+        creatorUrl.pathname = match[0];
+        creatorUrl.hash = "";
+        return creatorUrl;
+    }
+
+    static nextTocPageUrl(dom) {
+        let link = dom.querySelector("#paginator-top a.next");
+        if (link === null) {
+            return null;
+        }
+        let current = new URL(dom.baseURI);
+        let next = new URL(link.getAttribute("href"), dom.baseURI);
+        return next.origin === current.origin && next.pathname === current.pathname &&
+            Number(next.searchParams.get("o")) > Number(current.searchParams.get("o"))
+            ? next.href : null;
     }
 
     static getChapterUrlsFromTocPage(dom) {
         if (dom == null) {
             return [];
         }
-        let baseurl = new URL(dom.baseURI);
-        let urlbuilder = new URL(dom.baseURI);
-
-        for (const [key] of baseurl.searchParams.entries()) {
-            urlbuilder.searchParams.delete(key);
-        }
-        let regex = new RegExp("/$");
-        urlbuilder.pathname = urlbuilder.pathname.replace(regex, "");
-        let links = [...dom.querySelectorAll("article a")];
-        links = links.filter(a => a.href.includes(urlbuilder.href+"/post"));
+        let creator = PawchiveParser.creatorUrl(dom.baseURI);
+        let links = [...dom.querySelectorAll("article.post-card a[href]")];
+        links = links.filter(a => {
+            let url = new URL(a.getAttribute("href"), dom.baseURI);
+            return url.origin === creator.origin && url.pathname.startsWith(creator.pathname + "/post/");
+        });
         return links.map(a => ({
-            sourceUrl: a.href, 
-            title: a.querySelector("header").textContent.trim()
+            sourceUrl: new URL(a.getAttribute("href"), dom.baseURI).href,
+            title: (a.querySelector("header") ?? a).textContent.trim()
         }));
     }
 
@@ -70,10 +77,10 @@ class PawchiveParser extends Parser {
         header.textContent = post.title;
         newDoc.content.appendChild(header);
 
-        let content = util.sanitize(this.escapeUnknownTags(post.content));
+        let content = util.sanitize(this.escapeUnknownTags(post.content ?? ""));
         util.moveChildElements(content.body, newDoc.content);
 
-        let attachments = post.attachments;
+        let attachments = post.attachments ?? [];
         if (attachments.length > 0) {
             let attachHeader = newDoc.dom.createElement("h2");
             attachHeader.textContent = "Attachments";
@@ -150,18 +157,8 @@ class PawchiveParser extends Parser {
     }
 
     findCoverImageUrl(dom) {
-        let cover = dom.querySelector(".user-header__avatar img");
+        let cover = dom.querySelector(".user-header__avatar img, .post__user-profile img");
         return cover?.src ?? null;
-    }
-
-    getLastPageOffset(dom) {
-        let offsets = [...dom.querySelectorAll("#paginator-top a")]
-            .map(item => new URL(item.href).searchParams.get("o"))
-            .filter(item => item !== null)
-            .map(item => parseInt(item, 10))
-            .filter(item => !Number.isNaN(item));
-
-        return offsets.length > 0 ? Math.max(...offsets) : 0;
     }
 
     async fetchJson(url) {
@@ -179,6 +176,11 @@ class PawchiveParser extends Parser {
     }
 
     extractTitleImpl(dom) {
-        return dom.querySelector("h1");
+        return dom.querySelector(".user-header__name, .post__user-name") ?? dom.querySelector("h1");
+    }
+
+    extractAuthor(dom) {
+        let author = dom.querySelector(".user-header__name, .post__user-name");
+        return author?.textContent.trim() || super.extractAuthor(dom);
     }
 }

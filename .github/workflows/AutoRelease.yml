@@ -44,5 +44,5 @@ jobs:
           if gh release view "$release_tag" > /dev/null 2>&1; then
             gh release upload "$release_tag" release-artifacts/* --clobber
           else
-            gh release create "$release_tag" release-artifacts/* --target "$GITHUB_SHA" --title "WebToEpubFix $version — Patreon and Royal Road fixes" --notes-file RELEASE_NOTES.md --prerelease
+            gh release create "$release_tag" release-artifacts/* --target "$GITHUB_SHA" --title "WebToEpubFix $version — parser fixes" --notes-file RELEASE_NOTES.md --prerelease
           fi

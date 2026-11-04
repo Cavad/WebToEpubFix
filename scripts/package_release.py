@@ -29,6 +29,7 @@ for browser, extension, manifest_version in [("Firefox", "xpi", 2), ("Chromium",
             assert "browser_specific_settings" not in packaged
         assert "title?.textContent.trim()" in archive.read("js/parsers/PatreonParser.js").decode()
         assert "RoyalRoadParser.fictionUrl(dom.baseURI)" in archive.read("js/parsers/RoyalRoadParser.js").decode()
+        assert "PawchiveParser.creatorUrl(dom.baseURI)" in archive.read("js/parsers/PawchiveParser.js").decode()
     destination = output / f"WebToEpubFix-{version}-{browser}.zip"
     destination.write_bytes(source.read_bytes())
     assets.append(destination)
