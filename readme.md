@@ -12,7 +12,7 @@ These changes address the reported parser failures. They do not bypass subscript
 
 ### Using Pawchive
 
-Open a creator page such as [this Pawchive post list](https://pawchive.pw/patreon/user/207666427), or any post belonging to that creator, and click the extension icon. Both entry points load the creator's chapter list. To narrow the list, use the creator page's search/tag filters before opening the extension. In WebToEpubFix, tick only the chapters you want, then choose **Pack EPUB**. Posts are listed from oldest to newest; opening an individual post still offers the creator's chapter list for selection.
+Open a creator page such as [this Pawchive post list](https://pawchive.pw/patreon/user/207666427), or any post belonging to that creator, and click the extension icon. Both entry points load the creator's chapter list. To narrow the list, use the creator page's search/tag filters before opening the extension. While searching, the chapter count and pages loaded update. For a large archive, choose **Use loaded chapters** to stop searching and make the chapters found so far selectable, or wait for all pages to finish. In WebToEpubFix, tick only the chapters you want, then choose **Pack EPUB**. Posts are listed from oldest to newest; opening an individual post still offers the creator's chapter list for selection.
 
 ## Download and installation
 
@@ -20,13 +20,13 @@ Download packages from [Releases](https://github.com/Cavad/WebToEpubFix/releases
 
 | Browser | Package | Installation |
 | --- | --- | --- |
-| Firefox desktop | `WebToEpubFix-<version>-Firefox.zip` | Extract, open `about:debugging#/runtime/this-firefox`, choose **Load Temporary Add-on**, and select `manifest.json`. |
+| Firefox desktop | `WebToEpubFix-<version>-Firefox.xpi` | Open `about:debugging#/runtime/this-firefox`, choose **Load Temporary Add-on**, and select the downloaded `.xpi` file. |
 | Google Chrome | `WebToEpubFix-<version>-Chromium.zip` | Extract, open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked**, and select the extracted folder. |
 | Microsoft Edge | Chromium package | Extract, open `edge://extensions`, enable **Developer mode**, then **Load unpacked**. |
 | Brave | Chromium package | Extract, open `brave://extensions`, enable **Developer mode**, then **Load unpacked**. |
 | Opera | Chromium package | Extract, open `opera://extensions`, enable **Developer mode**, then **Load unpacked**. |
 
-The Firefox package is unsigned; temporary installations are removed when Firefox restarts. Permanent installation requires Mozilla signing. This fork is not currently published on Firefox Add-ons or the Chrome Web Store. Store links in the original documentation below refer to the upstream extension.
+The Firefox ZIP is also provided: extract it and select the extracted `manifest.json` in the same temporary-install dialog. Download the actual release asset; saving a GitHub page as a file does not download an extension. The Firefox package is unsigned; temporary installations are removed when Firefox restarts. Permanent installation requires Mozilla signing. This fork is not currently published on Firefox Add-ons or the Chrome Web Store. Store links in the original documentation below refer to the upstream extension.
 
 Chrome, Edge, Brave, and Opera share the Chromium package. Automated parser checks have run in Chromium; live Firefox, Edge, Brave, Opera, and authenticated Patreon checks remain unverified. Safari requires separate Apple packaging and signing and is not included. Mobile browsers are not validated for this fork.
 

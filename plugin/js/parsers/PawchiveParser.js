@@ -14,13 +14,43 @@ class PawchiveParser extends Parser {
     async getChapterUrls(dom, chapterUrlsUI) {
         let firstUrl = PawchiveParser.creatorUrl(dom.baseURI);
         firstUrl.searchParams.set("o", 0);
-        let firstHtml = (await HttpClient.wrapFetch(firstUrl.href)).responseXML;
-        let chapters = (await this.walkTocPages(firstHtml,
-            PawchiveParser.getChapterUrlsFromTocPage,
-            PawchiveParser.nextTocPageUrl,
-            chapterUrlsUI
-        )).reverse();
-        return chapters;
+        let chapters = [];
+        let pages = 0;
+        let finishRequested = false;
+        let finish;
+        let stopped = new Promise(resolve => { finish = resolve; });
+        let controller = new AbortController();
+        let scan = chapterUrlsUI.beginTocScan?.(() => {
+            finishRequested = true;
+            finish(null);
+            controller.abort();
+        });
+        try {
+            let url = firstUrl.href;
+            while (url !== null && !finishRequested) {
+                if (pages > 0) {
+                    await Promise.race([this.rateLimitDelay(), stopped]);
+                    if (finishRequested) break;
+                }
+                let response = await Promise.race([
+                    HttpClient.wrapFetch(url, {
+                        fetchOptions: {...HttpClient.makeOptions(), signal: controller.signal}
+                    }),
+                    stopped
+                ]);
+                if (response === null) break;
+                let partial = PawchiveParser.getChapterUrlsFromTocPage(response.responseXML);
+                chapters.push(...partial);
+                chapterUrlsUI.showTocProgress(partial);
+                scan?.update(chapters.length, ++pages);
+                if (partial.length === 0) break;
+                url = PawchiveParser.nextTocPageUrl(response.responseXML);
+            }
+            return chapters.reverse();
+        } finally {
+            controller.abort();
+            scan?.dispose();
+        }
     }
 
     static creatorUrl(url) {

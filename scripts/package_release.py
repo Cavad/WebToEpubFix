@@ -34,6 +34,10 @@ for browser, extension, manifest_version in [("Firefox", "xpi", 2), ("Chromium",
     destination.write_bytes(source.read_bytes())
     assets.append(destination)
     print(f"Validated {destination.name}")
+    if browser == "Firefox":
+        temporary_addon = destination.with_suffix(".xpi")
+        temporary_addon.write_bytes(source.read_bytes())
+        assets.append(temporary_addon)
 
 lockfile = ROOT / "package-lock.json"
 if not lockfile.is_file():

@@ -56,6 +56,36 @@ class ChapterUrlsUI {
         ChapterUrlsUI.resizeTitleColumnToFit(linksTable);
     }
 
+    beginTocScan(onUseLoaded) {
+        let row = ChapterUrlsUI.getPleaseWaitMessageRow();
+        let controls = document.createElement("span");
+        let status = document.createElement("span");
+        let button = document.createElement("button");
+        button.type = "button";
+        button.textContent = "Use loaded chapters";
+        button.title = "Stop searching and select from the chapters found so far.";
+        button.disabled = true;
+        button.onclick = () => {
+            button.disabled = true;
+            status.textContent = " Preparing loaded chapters. ";
+            onUseLoaded();
+        };
+        controls.append(status, button);
+        row.appendChild(controls);
+        return {
+            update: (count, pages) => {
+                status.textContent = ` Found ${count} chapters across ${pages} pages. `;
+                let chapterCount = document.getElementById("spanChapterCount");
+                if (chapterCount) chapterCount.textContent = count;
+                button.disabled = count === 0;
+            },
+            dispose: () => {
+                controls.remove();
+                row.hidden = true;
+            }
+        };
+    }
+
     showTocProgress(chapters) {
         let linksTable = ChapterUrlsUI.getChapterUrlsTable();
         chapters.forEach((chapter) => {

@@ -41,6 +41,59 @@ QUnit.test("paginationStopsAtLastOrRepeatedPage", function(assert) {
     assert.strictEqual(PawchiveParser.nextTocPageUrl(dom), null);
 });
 
+QUnit.test("useLoadedChaptersFinishesDuringPendingPageRequest", async function(assert) {
+    let originalFetch = HttpClient.wrapFetch;
+    let useLoaded;
+    let disposed = false;
+    let pendingSignal;
+    let dom = TestUtils.makeDomWithBody("");
+    util.setBaseTag("https://pawchive.pw/patreon/user/1", dom);
+    let first = TestUtils.makeDomWithBody('<article class="post-card"><a href="/patreon/user/1/post/2"><header>Loaded</header></a></article><div id="paginator-top"><a class="next" href="?o=50">Next</a></div>');
+    util.setBaseTag(dom.baseURI + "?o=0", first);
+    try {
+        HttpClient.wrapFetch = async (url, options) => {
+            if (url.endsWith("o=0")) return {responseXML: first};
+            pendingSignal = options.fetchOptions.signal;
+            useLoaded();
+            return new Promise(() => {});
+        };
+        let parser = new PawchiveParser();
+        parser.rateLimitDelay = async () => {};
+        let chapters = await parser.getChapterUrls(dom, {
+            showTocProgress: () => {},
+            beginTocScan: callback => {
+                useLoaded = callback;
+                return {update: count => assert.equal(count, 1), dispose: () => { disposed = true; }};
+            }
+        });
+        assert.equal(chapters.length, 1);
+        assert.equal(chapters[0].title, "Loaded");
+        assert.ok(pendingSignal.aborted, "Aborts the unfinished page fetch");
+        assert.ok(disposed, "Removes the discovery controls");
+    } finally {
+        HttpClient.wrapFetch = originalFetch;
+    }
+});
+
+QUnit.test("scanControlsShowCountAndAllowUsingLoadedChapters", function(assert) {
+    let fixture = document.getElementById("qunit-fixture");
+    fixture.innerHTML = '<span id="spanChapterCount">0</span>';
+    let used = false;
+    let ui = new ChapterUrlsUI(null);
+    let scan = ui.beginTocScan(() => { used = true; });
+    let row = ChapterUrlsUI.getPleaseWaitMessageRow();
+    let button = row.querySelector("button");
+    assert.ok(button.disabled, "Cannot finish before any chapters are loaded");
+    scan.update(50, 1);
+    assert.equal(document.getElementById("spanChapterCount").textContent, "50");
+    assert.notOk(button.disabled);
+    button.click();
+    assert.ok(used);
+    scan.dispose();
+    assert.strictEqual(row.querySelector("button"), null);
+    assert.ok(row.hidden);
+});
+
 QUnit.test("buildChapterWithoutAttachmentsAndMetadataFromPost", function(assert) {
     let parser = new PawchiveParser();
     let chapter = parser.buildChapter({title: "Chapter", content: "<p>Chapter body</p>"}, "https://pawchive.pw/patreon/user/1/post/2");
