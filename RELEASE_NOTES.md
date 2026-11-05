@@ -1,4 +1,7 @@
-Independent WebToEpub maintenance fork. This release makes large Pawchive chapter lists easier to use and retains the Patreon/Royal Road fixes proposed in [upstream PR #3113](https://github.com/dteviot/WebToEpub/pull/3113):
+Independent WebToEpub maintenance fork. This release adds pause/resume for interrupted downloads and retains the parser fixes proposed in [upstream PR #3113](https://github.com/dteviot/WebToEpub/pull/3113):
+
+- **Pause on interruptions:** HTTP 403 access checks, HTTP 429 rate limits, recognized CAPTCHA HTML (including HTTP 200 responses), unexpected HTML from JSON endpoints, and network fetch failures now pause the batch. Completed chapters stay in memory and queued requests wait. Use **Open page** to complete verification, then **Resume downloads** to retry the interrupted request. The EPUB is not packaged while paused. Keep the extension window open; progress is not persisted across closing it or restarting the browser.
+- **Validation:** a simulated 150-chapter batch paused after chapter 100, blocked queued requests, and completed after resume without re-downloading finished chapters. Tests also cover repeated challenges, HTTP 200 challenge pages, network interruptions, rate limits, and the pause controls.
 
 - **Pawchive discovery:** the chapter count and page progress now update during scanning. **Use loaded chapters** stops discovery, including an unfinished page request, and makes the chapters found so far available for selection. Large creator archives no longer have to finish scanning before you can select from loaded chapters.
 - **Firefox download:** a direct unsigned `.xpi` is provided alongside the ZIP to simplify temporary installation.

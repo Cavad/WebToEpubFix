@@ -51,13 +51,8 @@ HttpClient.simulateFetch = function (url, handler) {
     return Promise.resolve(response);
 }
 
-HttpClient.wrapFetchImpl = async function (url, wrapOptions) {
-    let response = await HttpClient.simulateFetch(url, HttpClient.makeOptions());
-    return HttpClient.checkResponseAndGetData(url, wrapOptions, response);
-}
-
-QUnit.test("fetchExtraChapterContent", function (assert) {
-    let done = assert.async();
+QUnit.test("fetchExtraChapterContent", async function (assert) {
+    let originalFetch = HttpClient.wrapFetchImpl;
 
     let extraUris = {
         "pages": 3,
@@ -67,10 +62,16 @@ QUnit.test("fetchExtraChapterContent", function (assert) {
     let parser = new WattpadParser();
     parser.userPreferences = new UserPreferences();
     parser.minimumThrottle = 0;
-    parser.fetchExtraChapterContent(extraUris).then(function(actual) {
+    try {
+        HttpClient.wrapFetchImpl = async function(url, wrapOptions) {
+            let response = await HttpClient.simulateFetch(url, HttpClient.makeOptions());
+            return HttpClient.checkResponseAndGetData(url, wrapOptions, response);
+        };
+        let actual = await parser.fetchExtraChapterContent(extraUris);
         assert.deepEqual(actual, watpaddExtraContent);
-        done();
-    });
+    } finally {
+        HttpClient.wrapFetchImpl = originalFetch;
+    }
 });
 
 QUnit.test("removeDuplicateParagraphs", function (assert) {

@@ -160,6 +160,12 @@
                 <button data-libclick="yes" id="LibAddToLibrary" class="expandedButton">__MSG_button_Add_to_Library__</button>
                 <button data-libclick="yes" id="LibPauseToLibrary" class="expandedButton" hidden="true">__MSG_button_Pause_to_Library__</button>
             </div>
+            <section id="downloadPauseNotice" role="status" aria-live="polite" hidden>
+                <strong>Downloads paused</strong>
+                <p id="downloadPauseMessage"></p>
+                <button id="openChallengePageButton" type="button">Open page</button>
+                <button id="resumeDownloadsButton" type="button">Resume downloads</button>
+            </section>
             <div class="HiddenButtonSection">
                 <button id="hiddenBibButton">__MSG_button_Lib_Library__</button>
                 <button id="advancedOptionsButton">__MSG_button_Advanced_Options__</button>

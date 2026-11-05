@@ -101,6 +101,7 @@ getFileList("../plugin/popup.html").then(function(fileList) {
     fs.writeFileSync("index.csv", index);
 }).catch(function(err) {
     console.log(err);
+    process.exitCode = 1;
 });
 
 //=================================================================
@@ -108,14 +109,14 @@ getFileList("../plugin/popup.html").then(function(fileList) {
 
 var addToZipFile = function(zip, nameInZip, filePath) {
     return readFilePromise(filePath).then(function(data) {
-        zip.add(nameInZip, new zipjs.Uint8ArrayReader(data));
+        return zip.add(nameInZip, new zipjs.Uint8ArrayReader(data));
     });
 };
 
 var writeZipToDisk = function(zip, filePath) {
     console.log("writeZipToDisk " + filePath);
     return zip.close().then(function(buffer) {
-        buffer.arrayBuffer().then(function(arraybuffer) {
+        return buffer.arrayBuffer().then(function(arraybuffer) {
             return writeFilePromise(filePath, arraybuffer);
         });
     });
@@ -149,14 +150,14 @@ var addPopupHtmlToZip = function(zip) {
                 .split("\n")
                 .filter(s => !s.includes("/experimental/"))
                 .join("\n");
-            zip.add("popup.html", new zipjs.TextReader(htmlAsString));
+            return zip.add("popup.html", new zipjs.TextReader(htmlAsString));
         });
 };
 
 var addBinaryFileToZip = function(zip, fileName, nameInZip) {
     return readFilePromise(fileName)
         .then(function(data) {
-            zip.add(nameInZip, new zipjs.Uint8ArrayReader(data));
+            return zip.add(nameInZip, new zipjs.Uint8ArrayReader(data));
         });
 };
 
@@ -206,7 +207,7 @@ var packNonManifestExtensionFiles = function(zip, packedFileName) {
         }).then(function() {
             console.log("Wrote Zip to disk");
         }).catch(function(err) {
-            console.log(err);    
+            throw err;
         });
 };
 
@@ -243,15 +244,20 @@ var makeManifestForChrome = function(data) {
 var packExtension = function(manifest, fileExtension) {
     let zipFileWriter = new zipjs.BlobWriter("application/epub+zip");
     let zipWriter = new zipjs.ZipWriter(zipFileWriter, {useWebWorkers: false,compressionMethod: 8, extendedTimestamp: false});
-    zipWriter.add("manifest.json", new zipjs.TextReader(JSON.stringify(manifest)));
-    return packNonManifestExtensionFiles(zipWriter, "WebToEpub" + manifest.version + fileExtension);
+    return zipWriter.add("manifest.json", new zipjs.TextReader(JSON.stringify(manifest)))
+        .then(function() {
+            return packNonManifestExtensionFiles(zipWriter, "WebToEpub" + manifest.version + fileExtension);
+        });
 };
 
 // pack the extensions for Chrome and firefox
 readFilePromise("../plugin/manifest.json")
     .then(function(data) {
-        packExtension(makeManifestForFirefox(data), ".xpi");
-        packExtension(makeManifestForChrome(data), ".zip");
+        return Promise.all([
+            packExtension(makeManifestForFirefox(data), ".xpi"),
+            packExtension(makeManifestForChrome(data), ".zip")
+        ]);
     }).catch(function(err) {
         console.log(err);
+        process.exitCode = 1;
     });

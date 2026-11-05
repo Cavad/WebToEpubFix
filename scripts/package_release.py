@@ -1,6 +1,7 @@
 """Validate built extensions and package the fork's release assets."""
 
 import hashlib
+from html.parser import HTMLParser
 import json
 from pathlib import Path
 import subprocess
@@ -13,6 +14,17 @@ version = manifest["version"]
 output = ROOT / "release-artifacts"
 output.mkdir(exist_ok=True)
 assets = []
+
+
+class PopupScripts(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.sources = []
+
+    def handle_starttag(self, tag, attributes):
+        source = dict(attributes).get("src")
+        if tag == "script" and source:
+            self.sources.append(source)
 
 for browser, extension, manifest_version in [("Firefox", "xpi", 2), ("Chromium", "zip", 3)]:
     source = ROOT / "eslint" / f"WebToEpub{version}.{extension}"
@@ -30,6 +42,13 @@ for browser, extension, manifest_version in [("Firefox", "xpi", 2), ("Chromium",
         assert "title?.textContent.trim()" in archive.read("js/parsers/PatreonParser.js").decode()
         assert "RoyalRoadParser.fictionUrl(dom.baseURI)" in archive.read("js/parsers/RoyalRoadParser.js").decode()
         assert "PawchiveParser.creatorUrl(dom.baseURI)" in archive.read("js/parsers/PawchiveParser.js").decode()
+        assert "pauseAndRetry" in archive.read("js/HttpClient.js").decode()
+        assert "downloadPauseNotice" in archive.read("popup.html").decode()
+        scripts = PopupScripts()
+        scripts.feed(archive.read("popup.html").decode())
+        missing = [source for source in scripts.sources if source not in archive.namelist()]
+        if missing:
+            raise RuntimeError(f"Missing popup scripts in {browser} package: {missing}")
     destination = output / f"WebToEpubFix-{version}-{browser}.zip"
     destination.write_bytes(source.read_bytes())
     assets.append(destination)

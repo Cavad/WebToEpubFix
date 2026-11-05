@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "WebToEpubFix",
-  "version": "1.0.14.64",
+  "version": "1.0.14.65",
   "description": "Independent WebToEpub fork with Patreon, Royal Road, and Pawchive parser fixes.",
   "default_locale": "en",
   "icons": {

@@ -24,11 +24,18 @@ class FetchErrorHandler {
         return UIText.Common.cancel;
     }
 
-    onFetchError(url, error) {
+    onFetchError(url, error, wrapOptions) {
+        if (wrapOptions && !wrapOptions.fetchOptions?.signal?.aborted && error.name !== "AbortError" &&
+            /failed to fetch|networkerror|network request failed|load failed/i.test(error.message)) {
+            return HttpClient.pauseAndRetry(url, wrapOptions, 0);
+        }
         return Promise.reject(new Error(this.makeFailMessage(url, error.message)));
     }
 
     onResponseError(url, wrapOptions, response, errorMessage) {
+        if (response.status === 403 || response.status === 429) {
+            return HttpClient.pauseAndRetry(url, wrapOptions, response.status);
+        }
         let failError;
         if (errorMessage) {
             failError = new Error(errorMessage);
@@ -158,6 +165,58 @@ class HttpClient {
         return { credentials: "include" };
     }
 
+    static async waitForResume() {
+        while (HttpClient.pausedRequest) {
+            await HttpClient.pausedRequest.promise;
+        }
+    }
+
+    static async pauseAndRetry(url, wrapOptions, status) {
+        if (!HttpClient.pausedRequest) {
+            let resume;
+            let promise = new Promise(resolve => { resume = resolve; });
+            HttpClient.pausedRequest = {promise, resume};
+            let notice = document.getElementById("downloadPauseNotice");
+            if (notice) {
+                notice.hidden = false;
+                let message = "The website requires verification or sign-in. Open the page, complete any CAPTCHA, then resume. Your download progress is preserved.";
+                if (status === 429) message = "The website asked us to slow down. Wait before resuming. Your download progress is preserved.";
+                if (status === 0) message = "The connection was interrupted. Check your connection or open the page, then resume. Your download progress is preserved.";
+                document.getElementById("downloadPauseMessage").textContent = message;
+                document.getElementById("openChallengePageButton").onclick = () => {
+                    let pageUrl = new URL(url);
+                    if (pageUrl.hostname.split(".")[0] === "pawchive") {
+                        pageUrl.pathname = pageUrl.pathname.replace(/^\/api\/v1(?=\/)/, "");
+                    }
+                    chrome.tabs.create({url: pageUrl.href});
+                };
+                document.getElementById("resumeDownloadsButton").onclick = HttpClient.resumeDownloads;
+            }
+        }
+        await HttpClient.waitForResume();
+        delete wrapOptions.retry;
+        return HttpClient.wrapFetchImpl(url, wrapOptions);
+    }
+
+    static resumeDownloads() {
+        let paused = HttpClient.pausedRequest;
+        HttpClient.pausedRequest = null;
+        let notice = document.getElementById("downloadPauseNotice");
+        if (notice) notice.hidden = true;
+        paused?.resume();
+    }
+
+    static async isChallengeResponse(response) {
+        if (response.headers?.get("cf-mitigated") === "challenge") return true;
+        let contentType = response.headers?.get("content-type") ?? "";
+        if (!/html/i.test(contentType) || typeof response.clone !== "function") return false;
+        let html = await response.clone().text();
+        let dom = new DOMParser().parseFromString(html, "text/html");
+        let challengeTitle = /^(just a moment|attention required|making sure you.re not a bot|verify (you are|you.re) human|security (verification|check)|captcha|human verification|checking your browser)/i.test(dom.title.trim());
+        let challengeWidget = dom.querySelector("#challenge-form, .cf-turnstile, .h-captcha, .g-recaptcha, input[name*='captcha'], script[src*='challenges.cloudflare.com'], script[src*='hcaptcha.com'], script[src*='recaptcha'], iframe[src*='hcaptcha.com']");
+        return challengeTitle && (challengeWidget !== null || /window\._cf_chl_opt|\/cdn-cgi\/challenge-platform\//i.test(html));
+    }
+
     static wrapFetch(url, wrapOptions) {
         if (wrapOptions == null) {
             wrapOptions = {
@@ -222,6 +281,7 @@ class HttpClient {
         }
         try
         {
+            await HttpClient.waitForResume();
             let response = await fetch(url, wrapOptions.fetchOptions);
             let ret = await HttpClient.checkResponseAndGetData(url, wrapOptions, response);
             if (wrapOptions.parser?.isNoContentToError403AndContentNull(ret)) {
@@ -236,11 +296,17 @@ class HttpClient {
         }
         catch (error)
         {
-            return wrapOptions.errorHandler.onFetchError(url, error);
+            return wrapOptions.errorHandler.onFetchError(url, error, wrapOptions);
         }
     }
 
-    static checkResponseAndGetData(url, wrapOptions, response) {
+    static async checkResponseAndGetData(url, wrapOptions, response) {
+        let unexpectedHtml = response.ok && wrapOptions.responseHandler instanceof FetchJsonResponseHandler &&
+            /html/i.test(response.headers?.get("content-type") ?? "");
+        if (response.status !== 403 && response.status !== 429 &&
+            (unexpectedHtml || await HttpClient.isChallengeResponse(response))) {
+            return HttpClient.pauseAndRetry(url, wrapOptions, 403);
+        }
         if (!response.ok) {
             return wrapOptions.errorHandler.onResponseError(url, wrapOptions, response);
         } else {

@@ -16,6 +16,14 @@ Open a creator page such as [this Pawchive post list](https://pawchive.pw/patreo
 
 ## Download and installation
 
+### Pausing for CAPTCHA or connection interruptions
+
+If a site returns an access check, a rate-limit response, a recognized CAPTCHA page, or a connection failure, the download pauses. Completed chapters stay in memory, and queued requests wait. The EPUB is not packaged while the interrupted request is paused.
+
+Keep the extension window open. Choose **Open page**, complete any CAPTCHA or sign-in, then choose **Resume downloads**. For rate limits, wait before resuming; for connection failures, restore connectivity first. The interrupted request is retried and the batch continues. If verification is still required, it pauses again. This does not solve CAPTCHAs automatically or preserve an unfinished batch across closing the extension or restarting the browser.
+
+### Browser packages
+
 Download packages from [Releases](https://github.com/Cavad/WebToEpubFix/releases). Firefox and Chromium require different packages:
 
 | Browser | Package | Installation |
