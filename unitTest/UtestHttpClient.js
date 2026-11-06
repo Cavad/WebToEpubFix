@@ -232,3 +232,30 @@ QUnit.test("networkFailurePausesButIntentionalAbortDoesNot", async function(asse
         HttpClient.setPartitionCookies = originalCookies;
     }
 });
+
+QUnit.test("imageExpiredSignature403SkipsImageWithoutPausing", async function(assert) {
+    let originalFetch = window.fetch;
+    let originalCookies = HttpClient.setPartitionCookies;
+    let attempts = 0;
+    try {
+        HttpClient.setPartitionCookies = async () => {};
+        window.fetch = async url => {
+            ++attempts;
+            return makeHttpTestResponse(url, "URL signature expired", 403, "text/plain");
+        };
+        let failed = false;
+        try {
+            await HttpClient.wrapFetch("https://scontent.example.net/v/t39/image.jpg",
+                {errorHandler: new FetchImageErrorHandler("https://example.org/chapter/1")});
+        } catch {
+            failed = true;
+        }
+        assert.ok(failed, "Dead image is skipped");
+        assert.equal(attempts, 1);
+        assert.notOk(HttpClient.pausedRequest, "An expired image URL never pauses the download");
+    } finally {
+        HttpClient.resumeDownloads();
+        window.fetch = originalFetch;
+        HttpClient.setPartitionCookies = originalCookies;
+    }
+});

@@ -155,6 +155,16 @@ class FetchImageErrorHandler extends FetchErrorHandler { // eslint-disable-line 
     getCancelButtonText() {
         return UIText.Common.skip;
     }
+
+    async onResponseError(url, wrapOptions, response, errorMessage) {
+        // A 403 on an image is usually permanent (e.g. an expired signed CDN URL),
+        // not a CAPTCHA. Pausing would loop forever because resuming refetches the
+        // same dead URL, so skip the image unless the host really sent a challenge.
+        if (response.status === 403 && !await HttpClient.isChallengeResponse(response)) {
+            return Promise.reject(new Error(errorMessage ?? this.makeFailMessage(response.url || url, response.status)));
+        }
+        return super.onResponseError(url, wrapOptions, response, errorMessage);
+    }
 }
 
 class HttpClient {
